@@ -21,28 +21,28 @@ from array import array
 #path1 - Session/Case/Frequency/, path2 - path1/Data/, ... ; output: *.txt 
 def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSnaps):
 	#plot for check
-	plt.imshow(image_array)
-	plt.colorbar()
-	plt.show()
+	#plt.imshow(image_array)
+	#plt.colorbar()
+	#plt.show()
 
 	#size of your array
 	rows=len(image_array[:,1])
 	cols=len(image_array[1,:])
 
 	Nx=rows
-	Dx=1*10^(-4)
-	print('Dx= '+ Dx)
+	Dx=10**(-4)
+	print('Dx= '+ str(Dx))
 
 	#all of this in terms of number of cells:
 	Wavelength=maxVp*100/(Frequency*100)//Dx 
 	Wavelength=int(Wavelength)
-	print('Wave_length= '+ Wavelength)
+	print('Wave_length= '+ str(Wavelength))
 	layerSize=cols
 	PML=0
 	Nz=PML+6*Wavelength+layerSize+PML
 
 	Dz=Dx
-	print('Nz = '+Nz)
+	print('Nz = '+str(Nz))
 	Dt=Dx*Dz/1300/(Dx+Dz)
 
 	Zstart=PML+4*Wavelength
@@ -55,7 +55,7 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 
 	#matrix of all geometry
 	AAA=np.zeros(shape=(Nx,Nz))
-	i=0
+	ii=0
 	jj=0
 	for i in range(len(image_array)):
 		jj=0
@@ -66,9 +66,9 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 		ii=ii+1
 
 
-	plt.imshow(AAA)
-	plt.colorbar()
-	plt.show()
+	#plt.imshow(AAA)
+	#plt.colorbar()
+	#plt.show()
 
 	#file with parametes of medium
 	pp=np.loadtxt('Input_parameters.txt')
@@ -151,6 +151,31 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 	c_file=open(path1+"c11.bin","wb")
 	c_file.write(C11)
 	c_file.close()
+	c_file=open(path1+"c33.bin","wb")
+	c_file.write(C33)
+	c_file.close()
+	c_file=open(path1+"c13.bin","wb")
+	c_file.write(C13)
+	c_file.close()
+	c_file=open(path1+"c55_xz.bin","wb")
+	c_file.write(c55)
+	c_file.close()
+	tau_file=open(path1+"tau11.bin","wb")
+	tau_file.write(tau11)
+	tau_file.close()
+	tau_file=open(path1+"tau33.bin","wb")
+	tau_file.write(tau33)
+	tau_file.close()
+	tau_file=open(path1+"tau13.bin","wb")
+	tau_file.write(tau13)
+	tau_file.close()
+	tau_file=open(path1+"tau55_xz.bin","wb")
+	tau_file.write(tau_55)
+	tau_file.close()
+	tau_file=open(path1+"tau_sigma.bin","wb")
+	tau_file.write(tau_sigma)
+	tau_file.close()
+
 
 	with open(path1+'INPUT.txt','w') as f:
 		f.write(str(Frequency))
@@ -195,7 +220,7 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 		f.write(' #v_x_snap\n')
 		f.write(str(1))
 		f.write(' #v_z_snap\n')
-		f.write(str(Nsnap))
+		f.write(str(NSnaps))
 		f.write(' #Nsnaps\n')
 		f.write(str(0))
 		f.write(' #MPIflag\n')
