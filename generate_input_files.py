@@ -32,6 +32,7 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 	Nx=rows
 	Dx=10**(-4)
 	print('Dx= '+ str(Dx))
+	print('Nx= '+ str(Nx))
 
 	#all of this in terms of number of cells:
 	Wavelength=maxVp*100/(Frequency*100)//Dx 
@@ -132,15 +133,20 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 
 ##--------------------------------------import to input files-----------------------------------
 
-	grid_file=open(path1+"grid.bin","wb")
-	grid=np.array([Nx, Nz, Dx, Dz, Dt])
-	grid_file.write(grid)
-	grid_file.close()
+	#grid_file=open(path1+"grid.bin","wb")
+	#grid=np.array([Nx, Nz, Dx, Dz, Dt])
+	#grid_file.write(grid)
+	#grid_file.close()
 
-	grid_file2=open(path2+"grid.bin","wb")
-	grid=np.array([Nx, Nz, Dx, Dz, Dt])
-	grid_file2.write(grid)
-	grid_file2.close()
+	output_file = open(path1+'grid.bin', 'wb')
+	float_array = array('d', [Dx, Dz, Dt])
+	float_array.tofile(output_file)
+	output_file.close()
+
+	output_file = open(path2+'grid.bin', 'wb')
+	float_array = array('d', [Dx, Dz, Dt])
+	float_array.tofile(output_file)
+	output_file.close()
 
 	rho_file=open(path1+"rho_x.bin","wb")
 	rho_file.write(rho_x)
@@ -194,8 +200,6 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 		f.write(' #PML_right\n')
 		f.write(str(PML))
 		f.write(' #PML_left\n')
-		f.write(str(0))
-		f.write(' #p_rec\n')
 		f.write(str(1))
 		f.write(' #sigma_xx_rec\n')
 		f.write(str(1))
@@ -213,19 +217,18 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 		f.write(str(1))
 		f.write(' #sigma_xz_snap\n')
 		f.write(str(1))
-		f.write(' #q_x_snap\n')
-		f.write(str(1))
-		f.write(' #q_z_snap\n')
-		f.write(str(1))
 		f.write(' #v_x_snap\n')
 		f.write(str(1))
 		f.write(' #v_z_snap\n')
 		f.write(str(NSnaps))
 		f.write(' #Nsnaps\n')
-		f.write(str(0))
-		f.write(' #MPIflag\n')
 		f.write(str(5))
 		f.write(' #dt/tau\n')
+		f.write(str(Nx))
+		f.write(' #Nx\n')
+		f.write(str(Nz))
+		f.write(' #Nz\n')
+
 
 	with open(path2+'INPUT.txt','w') as f:
 		f.write(str(Frequency)+" ")

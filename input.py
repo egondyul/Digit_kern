@@ -13,7 +13,7 @@ for i in range(10):
 		if j>=4 and j<=7:
 			image_array[i,j]=1
 
-Session='1/'
+Session='10/'
 Fractype='1/'
 folder='/Data/'
 os.mkdir(Session)
