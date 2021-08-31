@@ -6,7 +6,8 @@ import os
 import change_porousity as pore
 
 Session='1/'
-Fractype='5/'
+Fractype='6/'
+phi0=0.1
 Frequency=50000
 maxVp=1600 #1660
 Time=0.00025
@@ -65,7 +66,7 @@ elif case==5: #image from jpeg or tif
 	flag_image=1
 	image_array=for_image.for_image(1)
 elif case==6: #image from bin
-	pore.porosity(path1)
+	pore.porosity(path1,phi0)
 	image_array=np.loadtxt(path1+"image_porous1.txt")
 
 elif case==7:
