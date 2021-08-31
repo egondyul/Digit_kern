@@ -1,12 +1,10 @@
 import numpy as np
-from PIL import Image
 import matplotlib.pyplot as plt
-import cv2
-from skimage import io
-from sklearn.cluster import KMeans
 import os
 import math
 from array import array
+import sys
+import struct
 
 #you should create folders under the cycle! such as:
 #create the folders 
@@ -19,7 +17,7 @@ from array import array
 
 #function that generate input files for cpp: input: image_array-massive of 0,1,..(0-background, 1 - pore)
 #path1 - Session/Case/Frequency/, path2 - path1/Data/, ... ; output: *.txt 
-def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSnaps):
+def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSnaps, flag_image):
 	#plot for check
 	#plt.imshow(image_array)
 	#plt.colorbar()
@@ -30,9 +28,9 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 	cols=len(image_array[1,:])
 
 	Nx=rows
-	Dx=10**(-4)
+	#Dx=10**(-4)
+	Dx=2*10**(-5)
 	print('Dx= '+ str(Dx))
-	print('Nx= '+ str(Nx))
 
 	#all of this in terms of number of cells:
 	Wavelength=maxVp*100/(Frequency*100)//Dx 
@@ -44,7 +42,10 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 
 	Dz=Dx
 	print('Nz = '+str(Nz))
+	print('Nx = '+str(Nx))
 	Dt=Dx*Dz/1300/(Dx+Dz)
+	print('Dt= '+ str(Dt))
+
 
 	Zstart=PML+4*Wavelength
 	Zend=PML+4*Wavelength+layerSize
@@ -56,23 +57,30 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 
 	#matrix of all geometry
 	AAA=np.zeros(shape=(Nx,Nz))
+	for i in range(len(AAA)):
+		for j in range(len(AAA[i])):
+			AAA[i,j]=1
 	ii=0
 	jj=0
 	for i in range(len(image_array)):
 		jj=0
 		for j in range(len(AAA[i])):
 			if j>=Zstart+1 and j<=Zend-1:
+				#if image_array[ii,jj]==0 or image_array[ii,jj]==1 or image_array[ii,jj]==2:
 				AAA[i,j]=image_array[ii,jj]
 				jj=jj+1
 		ii=ii+1
 
 
-	#plt.imshow(AAA)
-	#plt.colorbar()
-	#plt.show()
+	plt.imshow(AAA)
+	plt.colorbar()
+	plt.show()
 
 	#file with parametes of medium
-	pp=np.loadtxt('Input_parameters.txt')
+	if(flag_image==0):
+		pp=np.loadtxt('Input_parameters.txt')
+	else:
+		pp=np.loadtxt('Input_image_parameters.txt')
 
 	rho=np.zeros(shape=(Nx,Nz))
 	C11=np.zeros(shape=Nx*Nz)
@@ -109,13 +117,58 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 				tau13[Nx*jt+it]=pp[7,1]
 				tau55[it,jt]=pp[8,1]
 				tau_sigma[Nx*jt+it]=pp[9,1]
+			if(flag_image!=0): #here ony 4 phases
+				if AAA[it,jt]==2:
+					rho[it,jt]=pp[0,2]
+					C11[Nx*jt+it]=pp[1,2]
+					C33[Nx*jt+it]=pp[2,2]
+					C13[Nx*jt+it]=pp[3,2]
+					C55[it,jt]=pp[4,2]
+					tau11[Nx*jt+it]=pp[5,2]
+					tau33[Nx*jt+it]=pp[6,2]
+					tau13[Nx*jt+it]=pp[7,2]
+					tau55[it,jt]=pp[8,2]
+					tau_sigma[Nx*jt+it]=pp[9,2]
+				elif AAA[it,jt]==3:
+					rho[it,jt]=pp[0,3]
+					C11[Nx*jt+it]=pp[1,3]
+					C33[Nx*jt+it]=pp[2,3]
+					C13[Nx*jt+it]=pp[3,3]
+					C55[it,jt]=pp[4,3]
+					tau11[Nx*jt+it]=pp[5,3]
+					tau33[Nx*jt+it]=pp[6,3]
+					tau13[Nx*jt+it]=pp[7,3]
+					tau55[it,jt]=pp[8,3]
+					tau_sigma[Nx*jt+it]=pp[9,3]
+				elif AAA[it,jt]==4:
+					rho[it,jt]=pp[0,4]
+					C11[Nx*jt+it]=pp[1,4]
+					C33[Nx*jt+it]=pp[2,4]
+					C13[Nx*jt+it]=pp[3,4]
+					C55[it,jt]=pp[4,4]
+					tau11[Nx*jt+it]=pp[5,4]
+					tau33[Nx*jt+it]=pp[6,4]
+					tau13[Nx*jt+it]=pp[7,4]
+					tau55[it,jt]=pp[8,4]
+					tau_sigma[Nx*jt+it]=pp[9,4]
 
+	if flag_image==0:
+		Vp=max(math.sqrt(pp[1,0]/pp[0,0]),math.sqrt(pp[1,1]/pp[0,1]))
+		with open(path1+'Vp.txt','w') as f:
+			f.write(str(Vp))
+	else:
+		Vp=max(math.sqrt(pp[1,0]/pp[0,0]),math.sqrt(pp[1,1]/pp[0,1]),math.sqrt(pp[1,2]/pp[0,2]),math.sqrt(pp[1,3]/pp[0,3]))
+		with open(path1+'Vp.txt','w') as f:
+			f.write(str(Vp))
 
 	#averaging
 	rho_x =np.zeros(shape=(Nx-1)*Nz)
 	for jt in range(len(rho[0])):
 		for it in range(len(rho)-1):
 			rho_x[(Nx-1)*jt+it]=0.5*(rho[it,jt]+rho[it+1,jt])
+
+
+
 
 	rho_z =np.zeros(shape=Nx*(Nz-1))
 	for jt in range(len(rho[0])-1):
@@ -131,12 +184,12 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 			if tau55[it,jt]!=0 and tau55[it+1,jt]!=0 and tau55[it,jt+1]!=0 and tau55[it+1,jt+1]!=0:
 				tau_55[jt*(Nx-1)+it]=1/tau55[it,jt]+1/tau55[it+1,jt]+tau55[it,jt+1]+1/tau55[it+1,jt+1]
 
-##--------------------------------------import to input files-----------------------------------
+	#for jt in range(len(rho[0])):
+	#	for it in range(len(rho)):
+	#		if tau_sigma[jt*(Nx)+it]!=0:
+	#			print(tau_sigma[jt*(Nx)+it])
 
-	#grid_file=open(path1+"grid.bin","wb")
-	#grid=np.array([Nx, Nz, Dx, Dz, Dt])
-	#grid_file.write(grid)
-	#grid_file.close()
+##--------------------------------------import to input files-----------------------------------
 
 	output_file = open(path1+'grid.bin', 'wb')
 	float_array = array('d', [Dx, Dz, Dt])
@@ -147,6 +200,7 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 	float_array = array('d', [Dx, Dz, Dt])
 	float_array.tofile(output_file)
 	output_file.close()
+
 
 	rho_file=open(path1+"rho_x.bin","wb")
 	rho_file.write(rho_x)
@@ -179,9 +233,10 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 	tau_file.write(tau_55)
 	tau_file.close()
 	tau_file=open(path1+"tau_sigma.bin","wb")
-	tau_file.write(tau_sigma)
+	tau_file.write(pp[9,0])
 	tau_file.close()
-
+	print("tau_sigma="+str(tau_sigma[0]))
+	print("tau_sigma="+str(pp[9,0]))
 
 	with open(path1+'INPUT.txt','w') as f:
 		f.write(str(Frequency))
@@ -239,9 +294,7 @@ def generate_input_files(image_array, path1, path2, Frequency, maxVp, Time, NSna
 		f.write(str(Receiver2)+" ")
 		f.write(str(Wavelength)+" ")
 		f.write(str(PML)+" ")
-
-
-
-
+		f.write(str(Nx)+" ")
+		f.write(str(Nz))
 
 
